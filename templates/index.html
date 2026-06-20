@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #1a1a2e;
+            color: #ffffff;
+        }
+        h1 { color: #e94560; }
+        .nav-links { margin-bottom: 10px; }
+        .nav-links a {
+            color: #e94560;
+            text-decoration: none;
+            margin-right: 20px;
+        }
+        .nav-links a:hover { text-decoration: underline; }
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .search-container input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 6px;
+            border: none;
+            background-color: #16213e;
+            color: #ffffff;
+            font-size: 1em;
+        }
+        .search-container button {
+            padding: 12px 24px;
+            background-color: #e94560;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .search-container button:hover { background-color: #c73652; }
+        .result-card {
+            background-color: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-info h3 { margin: 0 0 6px 0; color: #ffffff; }
+        .result-info p { margin: 0; color: #a8a8b3; font-size: 0.9em; }
+        .result-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: stretch;
+            min-width: 150px;
+            margin-left: 20px;
+        }
+        .status-select {
+            padding: 8px;
+            border-radius: 6px;
+            border: none;
+            background-color: #0f3460;
+            color: #ffffff;
+            font-size: 0.9em;
+        }
+        .add-button {
+            padding: 8px 16px;
+            background-color: #e94560;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .add-button:hover { background-color: #c73652; }
+        .message {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: none;
+        }
+        .message.success { background-color: #1a472a; color: #69ff84; }
+        .message.error { background-color: #4a1a1a; color: #ff6969; }
+        #loading { color: #a8a8b3; display: none; }
+    </style>
+</head>
+<body>
+    <h1>🎬 Stream Tracker</h1>
+    <p>Search for shows and movies to add to your watchlist</p>
+    <p class="nav-links">
+        <a href="/my-list">📋 My List</a>
+        <a href="/settings">⚙️ Settings</a>
+    </p>
+
+    <div class="search-container">
+        <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Search for a show or movie..."
+            onkeypress="handleKeyPress(event)"
+        >
+        <button onclick="searchShows()">Search</button>
+    </div>
+
+    <div id="message" class="message"></div>
+    <p id="loading">Searching and fetching details — this may take a few seconds...</p>
+    <div id="results"></div>
+
+<script>
+    function handleKeyPress(event) {
+        if (event.key === "Enter") {
+            searchShows();
+        }
+    }
+
+    function searchShows(expand) {
+        const query = document.getElementById("searchInput").value;
+        if (!query) return;
+
+        document.getElementById("loading").style.display = "block";
+        document.getElementById("results").innerHTML = "";
+        document.getElementById("message").style.display = "none";
+
+        const url = `/search?query=${encodeURIComponent(query)}&expand=${expand ? "true" : "false"}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("loading").style.display = "none";
+                displayResults(data.results, expand);
+
+                if (data.found_but_filtered) {
+                    const container = document.getElementById("results");
+                    container.innerHTML = `
+                        <p style="color:#a8a8b3;">
+                            No results on your services for "${query}".
+                        </p>
+                        <button class="add-button" onclick="searchShows(true)">
+                            Search all services anyway
+                        </button>
+                    `;
+                }
+            });
+    }
+
+    function displayResults(results, expanded) {
+        const container = document.getElementById("results");
+        
+        if (results.length === 0) {
+            container.innerHTML = "<p>No results found. Try a different search.</p>";
+            return;
+        }
+
+        const countHeader = `<p style="color: #a8a8b3;">Top ${results.length} results shown</p>`;
+
+        container.innerHTML = countHeader + results.map(show => `
+            <div class="result-card">
+                <div class="result-info">
+                    <h3>
+                        ${show.title} 
+                        <span style="color: #a8a8b3; font-size: 0.85em;">(${show.year || 'Unknown year'})</span>
+                    </h3>
+                    <p>
+                        ${show.type === 'tv' ? '📺' : '🎬'} ${show.type_label}
+                        • ${show.network}
+                        ${show.imdb_rating ? '• ⭐ ' + show.imdb_rating : ''}
+                    </p>
+                    ${expanded ? `<p><a href="/where-to-watch?id=${show.watchmode_id}" style="color:#e94560; text-decoration:none; font-size:0.85em;">💲 Where to buy/rent</a></p>` : ''}
+                    <p style="color: #7a7a8a; font-size: 0.85em; margin-top: 6px; max-width: 550px;">
+                        ${show.plot}
+                    </p>
+                </div>
+                <div class="result-actions">
+                    <select class="status-select" id="status-${show.watchmode_id}">
+                        <option value="Watching">Watching</option>
+                        <option value="Watched">Watched</option>
+                        <option value="Want to Watch">Want to Watch</option>
+                    </select>
+                    <button class="add-button" onclick="addShow(
+                        ${show.watchmode_id}, 
+                        '${show.title.replace(/'/g, "\\'")}', 
+                        '${show.type}', 
+                        '${show.year}',
+                        '${show.network.replace(/'/g, "\\'")}'
+                    )">
+                        Add to List
+                    </button>
+                </div>
+            </div>
+        `).join("");
+    }
+
+    function addShow(watchmodeId, title, type, year, network) {
+        const status = document.getElementById(`status-${watchmodeId}`).value;
+        
+        const messageDiv = document.getElementById("message");
+        messageDiv.style.display = "block";
+        messageDiv.className = "message";
+        messageDiv.textContent = "Adding...";
+
+        fetch("/add-show", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                watchmode_id: watchmodeId,
+                title: title,
+                type: type === 'tv' ? 'Series' : 'Movie',
+                year: year,
+                network: network,
+                status: status
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                messageDiv.className = "message success";
+                messageDiv.textContent = `✅ "${title}" added to your list!`;
+            } else {
+                messageDiv.className = "message error";
+                messageDiv.textContent = `❌ Error: ${data.error}`;
+            }
+        });
+    }
+</script>
+</body>
+</html>

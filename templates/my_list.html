@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Tracker - My List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #1a1a2e;
+            color: #ffffff;
+        }
+        h1 { color: #e94560; }
+        .nav { margin-bottom: 30px; }
+        .nav a {
+            color: #e94560;
+            text-decoration: none;
+            margin-right: 20px;
+            font-size: 0.95em;
+        }
+        .nav a:hover { text-decoration: underline; }
+        .show-card {
+            background-color: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .show-info h3 { margin: 0 0 6px 0; color: #ffffff; }
+        .show-info p { margin: 0; color: #a8a8b3; font-size: 0.9em; }
+        .empty {
+            text-align: center;
+            color: #a8a8b3;
+            margin-top: 60px;
+        }
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 8px 18px;
+            background-color: #16213e;
+            color: #a8a8b3;
+            border: 1px solid #2a2a4a;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .filter-btn:hover { background-color: #1f2a4a; }
+        .filter-btn.active {
+            background-color: #e94560;
+            color: #ffffff;
+            border-color: #e94560;
+        }
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .status-edit {
+            padding: 8px;
+            border-radius: 6px;
+            border: none;
+            background-color: #0f3460;
+            color: #ffffff;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+        .remove-btn {
+            padding: 8px 14px;
+            background-color: #2a2a4a;
+            color: #ff8080;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .remove-btn:hover { background-color: #4a1a1a; }
+    .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-box {
+            background-color: #16213e;
+            border-radius: 10px;
+            padding: 28px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        .modal-title {
+            margin: 0 0 12px 0;
+            color: #e94560;
+        }
+        .modal-message {
+            margin: 0 0 24px 0;
+            color: #c8c8d3;
+            line-height: 1.4;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .modal-cancel {
+            padding: 10px 20px;
+            background-color: #2a2a4a;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .modal-cancel:hover { background-color: #353555; }
+        .modal-confirm {
+            padding: 10px 20px;
+            background-color: #e94560;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .modal-confirm:hover { background-color: #c73652; }
+    .refresh-btn {
+            padding: 8px 14px;
+            background-color: #0f3460;
+            color: #a8c8ff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .refresh-btn:hover { background-color: #15498a; }
+        .refresh-result {
+            font-size: 0.85em;
+            margin-top: 8px;
+            color: #69ff84;
+        }
+        .check-info {
+            color: #8a9aba !important;
+            font-size: 0.82em !important;
+            margin-top: 6px !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/">← Search</a>
+        <a href="/my-list">My List</a>
+        <a href="/settings">⚙️ Settings</a>
+    </div>
+
+    <h1>📋 My List (<span id="visible-count">{{ shows|length }}</span>)</h1>
+
+    {% if shows|length == 0 %}
+        <p class="empty">Your list is empty. Head to Search to add some shows!</p>
+    {% else %}
+        <div class="filter-bar">
+            <button class="filter-btn active" onclick="filterShows('all', this)">All</button>
+            <button class="filter-btn" onclick="filterShows('Watching', this)">Watching</button>
+            <button class="filter-btn" onclick="filterShows('Want to Watch', this)">Want to Watch</button>
+            <button class="filter-btn" onclick="filterShows('Watched', this)">Watched</button>
+        </div>
+
+        <div id="show-container">
+        {% for show in shows %}
+        <div class="show-card" data-status="{{ show.status }}">
+            <div class="show-info">
+                <h3>{{ show.title }} <span style="color:#a8a8b3; font-size:0.85em;">({{ show.year }})</span></h3>
+                <p>{{ show.type }} • {{ show.network }}</p>
+                {% if show.last_checked %}
+                <p class="check-info">📺 {{ show.last_known_seasons }} season(s) · last checked {{ show.last_checked }}</p>
+                {% endif %}
+            </div>
+            <div class="card-actions">
+                <select class="status-edit" onchange="changeStatus('{{ show.watchmode_id }}', this.value)">
+                    <option value="Watching" {% if show.status == 'Watching' %}selected{% endif %}>Watching</option>
+                    <option value="Want to Watch" {% if show.status == 'Want to Watch' %}selected{% endif %}>Want to Watch</option>
+                    <option value="Watched" {% if show.status == 'Watched' %}selected{% endif %}>Watched</option>
+                </select>
+                <button class="remove-btn" onclick="removeShow('{{ show.watchmode_id }}', this.closest('.show-card').querySelector('h3').textContent.trim())">Remove</button>
+                <button class="refresh-btn" onclick="refreshShow('{{ show.watchmode_id }}', this)">⟳ Check</button>
+            </div>
+        </div>
+        {% endfor %}
+        </div>
+
+        <p id="no-matches" class="empty" style="display:none;">No shows with that status.</p>
+    {% endif %}
+
+    <div id="confirm-overlay" class="modal-overlay">
+        <div class="modal-box">
+            <h3 class="modal-title">Remove show?</h3>
+            <p class="modal-message" id="modal-message">Are you sure you want to remove this show from your list?</p>
+            <div class="modal-actions">
+                <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+                <button class="modal-confirm" onclick="confirmRemove()">Remove</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    function filterShows(status, btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const cards = document.querySelectorAll('.show-card');
+        let visible = 0;
+
+        cards.forEach(card => {
+            const cardStatus = card.getAttribute('data-status');
+            if (status === 'all' || cardStatus === status) {
+                card.style.display = 'flex';
+                visible++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        document.getElementById('visible-count').textContent = visible;
+        document.getElementById('no-matches').style.display = visible === 0 ? 'block' : 'none';
+    }
+
+    function changeStatus(watchmodeId, newStatus) {
+        fetch("/update-status", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({watchmode_id: watchmodeId, status: newStatus})
+        })
+        .then(response => response.json())
+        .then(data => {
+            window.location.reload();
+        });
+    }
+
+// Remembers which show is pending removal while the modal is open
+    let pendingRemovalId = null;
+
+    function removeShow(watchmodeId, title) {
+        pendingRemovalId = watchmodeId;
+        // Personalize the message if we have a title
+        const msg = title
+            ? `Are you sure you want to remove "${title}" from your list?`
+            : "Are you sure you want to remove this show from your list?";
+        document.getElementById("modal-message").textContent = msg;
+        document.getElementById("confirm-overlay").classList.add("show");
+    }
+
+    function closeModal() {
+        pendingRemovalId = null;
+        document.getElementById("confirm-overlay").classList.remove("show");
+    }
+
+    function refreshShow(watchmodeId, btn) {
+        btn.textContent = "Checking...";
+        btn.disabled = true;
+
+        fetch("/refresh-show", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({watchmode_id: watchmodeId})
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.textContent = "⟳ Check";
+            btn.disabled = false;
+
+            // Find the card and show the result message under it
+            const card = btn.closest(".show-card");
+            let resultEl = card.querySelector(".refresh-result");
+            if (!resultEl) {
+                resultEl = document.createElement("div");
+                resultEl.className = "refresh-result";
+                card.querySelector(".show-info").appendChild(resultEl);
+            }
+            resultEl.textContent = data.message;
+            // Color new-season finds differently
+            resultEl.style.color = data.status === "new_season" ? "#ffcc69" : "#69ff84";
+        });
+    }
+
+    function confirmRemove() {
+        if (!pendingRemovalId) return;
+        fetch("/delete-show", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({watchmode_id: pendingRemovalId})
+        })
+        .then(response => response.json())
+        .then(data => {
+            window.location.reload();
+        });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Tracker - Settings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #1a1a2e;
+            color: #ffffff;
+        }
+        h1 { color: #e94560; }
+        h2 { color: #a8a8b3; }
+        .nav {
+            margin-bottom: 30px;
+        }
+        .nav a {
+            color: #e94560;
+            text-decoration: none;
+            margin-right: 20px;
+            font-size: 0.95em;
+        }
+        .nav a:hover { text-decoration: underline; }
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .service-card {
+            background-color: #16213e;
+            border-radius: 8px;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+            user-select: none;
+        }
+        .service-card.selected {
+            border-color: #e94560;
+        }
+        .service-card input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #e94560;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .service-card label {
+            font-size: 1em;
+            cursor: pointer;
+            flex: 1;
+        }
+        .save-button {
+            padding: 12px 32px;
+            background-color: #e94560;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-top: 10px;
+        }
+        .save-button:hover { background-color: #c73652; }
+        .message {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: none;
+        }
+        .message.success {
+            background-color: #1a472a;
+            color: #69ff84;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/">← Back to Search</a>
+    </div>
+
+    <h1>⚙️ Settings</h1>
+    <h2>My Streaming Services</h2>
+    <p>Select the services you subscribe to. Search results will only show content available on these services.</p>
+
+    <div class="service-grid">
+        {% for service in all_services %}
+        <div class="service-card {% if service in selected_services %}selected{% endif %}"
+             id="card-{{ loop.index }}">
+            <input
+                type="checkbox"
+                id="service-{{ loop.index }}"
+                value="{{ service }}"
+                {% if service in selected_services %}checked{% endif %}
+            >
+            <label for="service-{{ loop.index }}">{{ service }}</label>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="message" class="message"></div>
+    <button class="save-button" onclick="saveSettings()">Save Settings</button>
+
+<script>
+    // Add click handler to each card
+    document.querySelectorAll('.service-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            // Get the checkbox inside this card
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            
+            // If user clicked directly on checkbox, let it handle itself
+            // Otherwise toggle it manually
+            if (e.target !== checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
+            
+            // Update card highlight
+            this.classList.toggle('selected', checkbox.checked);
+        });
+    });
+
+    function saveSettings() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        const selected = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        fetch("/settings", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({services: selected})
+        })
+        .then(response => response.json())
+        .then(data => {
+            const messageDiv = document.getElementById("message");
+            messageDiv.style.display = "block";
+            messageDiv.className = "message success";
+            messageDiv.textContent = "✅ Settings saved successfully!";
+            setTimeout(() => {
+                messageDiv.style.display = "none";
+            }, 3000);
+        });
+    }
+</script>
+</body>
+</html>s

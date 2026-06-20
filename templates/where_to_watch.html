@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Tracker - Where to Watch</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background-color: #1a1a2e;
+            color: #ffffff;
+        }
+        h1 { color: #e94560; }
+        .nav { margin-bottom: 30px; }
+        .nav a {
+            color: #e94560;
+            text-decoration: none;
+            margin-right: 20px;
+            font-size: 0.95em;
+        }
+        .nav a:hover { text-decoration: underline; }
+        .option-card {
+            background-color: #16213e;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .option-name { font-size: 1.05em; color: #ffffff; }
+        .option-type {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+        .type-rent { background-color: #2a3a5a; color: #a8c8ff; }
+        .type-buy { background-color: #3a2a5a; color: #c8a8ff; }
+        .option-price { font-size: 1.1em; color: #69ff84; font-weight: bold; }
+        .no-price { color: #a8a8b3; font-weight: normal; font-size: 0.9em; }
+        .empty { text-align: center; color: #a8a8b3; margin-top: 60px; }
+        .disclaimer {
+            color: #7a7a8a;
+            font-size: 0.85em;
+            margin-top: 30px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/">← Search</a>
+        <a href="/my-list">My List</a>
+        <a href="/settings">⚙️ Settings</a>
+    </div>
+
+    {% if not data %}
+        <h1>💲 Where to Buy or Rent</h1>
+        <p class="empty">No title selected. Use the search page to find a show first.</p>
+    {% else %}
+        <h1>💲 {{ data.title }} <span style="color:#a8a8b3; font-size:0.6em;">({{ data.year }})</span></h1>
+
+        {% if data.options|length == 0 %}
+            <p class="empty">No rent or buy options found for this title.</p>
+        {% else %}
+            <p style="color:#a8a8b3;">Available to rent or buy from:</p>
+            {% for opt in data.options %}
+            <div class="option-card">
+                <div>
+                    <span class="option-name">{{ opt.name }}</span>
+                    <span class="option-type {% if opt.type == 'Rent' %}type-rent{% else %}type-buy{% endif %}">{{ opt.type }}</span>
+                </div>
+                <div>
+                    {% if opt.price %}
+                        <span class="option-price">${{ "%.2f"|format(opt.price) }}</span>
+                    {% else %}
+                        <span class="no-price">Price not listed</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <p class="disclaimer">Pricing is informational and may not reflect current rates. Streaming data powered by Watchmode.com</p>
+    {% endif %}
+</body>
+</html>
