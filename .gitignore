@@ -3,3 +3,4 @@ credentials.json
 token.json
 settings.json
 __pycache__/
+SecretBacklog.md
