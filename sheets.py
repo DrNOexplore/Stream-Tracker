@@ -124,7 +124,7 @@ def delete_show(watchmode_id):
     # Clear the whole data area first, then write back what we kept
     service.spreadsheets().values().clear(
         spreadsheetId=SHEET_ID,
-        range="Sheet1!A:F"
+        range="Sheet1!A:H"
     ).execute()
 
     new_values = [header] + kept
